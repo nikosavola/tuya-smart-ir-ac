@@ -14,6 +14,7 @@
 | 5 | 🟡 Medium | Performance | Sensor smart-polling never recognizes Pulsar DPS codes → redundant cloud polling |
 | 6 | 🟡 Medium | UX / Data | Editing options wipes every device-registry entry on each update |
 | 7 | 🔵 Low | Quality | No automated tests or linting in CI; plus housekeeping cleanups |
+| 8 | 🟡 Medium | Bug / UX | Max-temperature config field is hard-capped at 30 °C, so wider hardware ranges (e.g. 32 °C) can't be set |
 
 ---
 
@@ -275,3 +276,47 @@ Issue 4a (`RUF006`).
 - **Empty-padding edge case** — `openpulsar._decrypt_ecb` does `decrypted[:-padding_len]`; if a
   malformed frame yields `padding_len == 0`, this returns an empty string. A defensive guard
   (`1 <= padding_len <= block_size`) would harden it.
+
+---
+
+## 8. 🟡 Medium: Max-temperature config field is hard-capped at 30 °C — wider hardware ranges can't be set
+
+### Summary
+When adding/editing a climate device, the **min/max temperature** fields in the config flow are
+themselves bounded by the *default* range constants, so the user cannot configure a maximum above
+30 °C even when the physical AC supports e.g. 32 °C.
+
+`config_flow.py` (`climate_data()`), with `DEFAULT_MIN_TEMP = 16` / `DEFAULT_MAX_TEMP = 30` in
+`const.py`:
+```python
+vol.Required(CONF_TEMP_MIN, default=DEFAULT_MIN_TEMP): NumberSelector(
+    NumberSelectorConfig(min=DEFAULT_MIN_TEMP, max=DEFAULT_MAX_TEMP, step=1, mode=NumberSelectorMode.BOX)
+),
+vol.Required(CONF_TEMP_MAX, default=DEFAULT_MAX_TEMP): NumberSelector(
+    NumberSelectorConfig(min=DEFAULT_MIN_TEMP, max=DEFAULT_MAX_TEMP, step=1, mode=NumberSelectorMode.BOX)  # <-- max=30
+),
+```
+The selector that defines the *upper bound* is itself clamped to the default upper bound (30), so
+values like 31–32 are rejected by the form. The same `DEFAULT_MIN_TEMP`/`DEFAULT_MAX_TEMP` clamp is
+also applied to the preset-temperature selector in `async_step_preset_configure`
+(`config_flow.py:503-510`), which would cap presets the same way.
+
+### Impact
+- **Medium (UX / functional).** Users with ACs supporting ranges wider than 16–30 °C (common — many
+  units go to 31/32 °C, and some heat pumps lower) cannot represent their hardware's real range, so
+  the climate entity refuses otherwise-valid setpoints.
+
+### Proposed fix
+Decouple the *configurable* bounds from the *default* bounds. Introduce absolute hardware-plausible
+limits (e.g. `ABS_MIN_TEMP = 5`, `ABS_MAX_TEMP = 40`) and use those for the `min`/`max` of the
+`CONF_TEMP_MIN` / `CONF_TEMP_MAX` (and preset) `NumberSelector`s, while keeping `DEFAULT_MIN_TEMP` /
+`DEFAULT_MAX_TEMP` (16/30) only as the pre-filled `default=` values:
+```python
+vol.Required(CONF_TEMP_MAX, default=DEFAULT_MAX_TEMP): NumberSelector(
+    NumberSelectorConfig(min=ABS_MIN_TEMP, max=ABS_MAX_TEMP, step=1, mode=NumberSelectorMode.BOX)
+),
+```
+Optionally validate `min_temp < max_temp` on submit and surface a friendly error. Note the downstream
+preset slider in `async_step_preset_configure` also uses the default constants for its `min`/`max`
+and should be widened consistently.
+
