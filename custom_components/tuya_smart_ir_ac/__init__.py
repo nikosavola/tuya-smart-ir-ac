@@ -31,7 +31,9 @@ from .const import (
     DEFAULT_GLOBAL_PRESETS,
     DEVICE_TYPE_CLIMATES,
     DEVICE_TYPE_SENSORS,
-    DEVICE_TYPE_GENERICS
+    DEVICE_TYPE_GENERICS,
+    CONF_DEVICE_ID,
+    CONF_INFRARED_ID
 )
 from .helpers import merge_presets_with_defaults
 from .coordinator import TuyaClimateCoordinator, TuyaSensorCoordinator
@@ -205,9 +207,25 @@ async def async_update_entry(hass: HomeAssistant, entry: HubConfigEntry) -> None
 
     if entry.disabled_by is None:
         device_registry = dr.async_get(hass)
+
+        # Build the set of device identifiers that still correspond to a
+        # configured sub-device so we only prune entries that were removed.
+        valid_identifiers = set()
+        for climate in entry.options.get(DEVICE_TYPE_CLIMATES, []):
+            valid_identifiers.add(
+                (DOMAIN, f"{climate.get(CONF_INFRARED_ID)}_{climate.get(CONF_DEVICE_ID)}")
+            )
+        for sensor in entry.options.get(DEVICE_TYPE_SENSORS, []):
+            valid_identifiers.add((DOMAIN, str(sensor.get(CONF_DEVICE_ID))))
+        for generic in entry.options.get(DEVICE_TYPE_GENERICS, []):
+            valid_identifiers.add(
+                (DOMAIN, f"{entry.entry_id}_{generic.get(CONF_DEVICE_ID)}")
+            )
+
         devices = dr.async_entries_for_config_entry(device_registry, entry.entry_id)
         for device_entry in devices:
-            device_registry.async_remove_device(device_entry.id)
+            if not (device_entry.identifiers & valid_identifiers):
+                device_registry.async_remove_device(device_entry.id)
 
     await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
