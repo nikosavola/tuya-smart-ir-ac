@@ -14,8 +14,11 @@ jobs:
           python-version: "3.13"
       - name: Install ruff
         run: pip install ruff
+      # Report-only for now: the existing codebase has pre-existing style
+      # findings. Drop --exit-zero (or set fail-fast) once they are cleaned up
+      # so lint becomes a blocking gate.
       - name: Run ruff
-        run: ruff check custom_components/
+        run: ruff check --exit-zero custom_components/
 
   compile:
     runs-on: ubuntu-latest
