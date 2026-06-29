@@ -14,7 +14,8 @@ from .const import (
     UPDATE_TIMEOUT,
     CONF_DEVICE_ID,
     DEVICE_TYPE_CLIMATES,
-    DEVICE_TYPE_SENSORS
+    DEVICE_TYPE_SENSORS,
+    TUYA_CODE_MAPPING
 )
 from .helpers import tuya_temp, tuya_mode, tuya_wind
 from .api import TuyaClimateAPI, TuyaSensorAPI
@@ -292,7 +293,10 @@ class TuyaSensorCoordinator(DataUpdateCoordinator[dict[str, TuyaSensorData]]):
 
     async def _async_update_from_pulsar(self, device_id: str, new_status: dict):
         """Process incoming Pulsar updates."""
-        codes = [item.get("code") for item in new_status.get("status", [])]
+        codes = [
+            TUYA_CODE_MAPPING.get(item.get("code"), item.get("code"))
+            for item in new_status.get("status", [])
+        ]
         self._update_dps_timestamp(device_id, codes)
 
         current_item = self.data.get(device_id)
