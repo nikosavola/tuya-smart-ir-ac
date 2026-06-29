@@ -21,7 +21,6 @@ MANUFACTURER = "Tuya"
 CLIMATE_MODEL = "IR Air Conditioning"
 GENERIC_MODEL = "IR Remote Control"
 SENSOR_MODEL = "T & H Sensor"
-TEST_MODE = True
 
 # Platforms supported by this integration
 PLATFORMS = [

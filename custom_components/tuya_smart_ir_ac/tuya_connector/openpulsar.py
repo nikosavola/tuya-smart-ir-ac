@@ -201,4 +201,9 @@ class TuyaOpenPulsar:
         cipher = AES.new(self._key_bytes, AES.MODE_ECB)
         decrypted = cipher.decrypt(raw_data)
         padding_len = decrypted[-1]
+        # PKCS#7 padding must be within 1..16 (AES block size); otherwise the
+        # data is malformed. Avoid an empty/incorrect strip and decode as-is.
+        if not 1 <= padding_len <= 16:
+            logger.warning("Invalid ECB padding length %s; returning unstripped payload", padding_len)
+            return decrypted.decode('utf-8')
         return decrypted[:-padding_len].decode('utf-8')

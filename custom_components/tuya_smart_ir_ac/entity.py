@@ -264,7 +264,7 @@ class TuyaClimateEntity:
 
         return convert_to_float(sensor_state.state)
 
-    def get_preset_modes(self) -> str:
+    def get_preset_modes(self) -> list[str] | None:
         """Return the list of available preset modes based on current HVAC mode."""    
         global_presets = self._runtime_data.global_presets
 

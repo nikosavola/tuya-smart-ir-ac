@@ -70,7 +70,7 @@ class TuyaOpenAPI:
         self.dev_channel: str = ""
         
         self._session: aiohttp.ClientSession | None = session
-        # Se la sessione viene passata dall'esterno, non ne siamo i proprietari (_owns_session = False)
+        # If the session is provided externally, we do not own it (_owns_session = False)
         self._owns_session: bool = session is None
         self._token_lock = asyncio.Lock()
 
@@ -213,7 +213,7 @@ class TuyaOpenAPI:
         
         if body is not None:
             payload_str = json.dumps(body, separators=(",", ":"))
-            request_kwargs["data"] = payload_str # Invia la stringa esatta, bypassando la serializzazione automatica di aiohttp
+            request_kwargs["data"] = payload_str # Send the exact string, bypassing aiohttp's automatic serialization
         
         sign, timestamp = self._calculate_sign(method, path, params, payload_str)
         
@@ -229,7 +229,7 @@ class TuyaOpenAPI:
             "dev_channel": f"cloud_{self.dev_channel}",
         }
         
-        # Imposta esplicitamente il Content-Type visto che stiamo passando dati grezzi
+        # Explicitly set the Content-Type since we are passing raw data
         if payload_str:
             headers["Content-Type"] = "application/json"
 
@@ -244,7 +244,7 @@ class TuyaOpenAPI:
 
         session = await self._get_session()
         try:
-            # Sfrutta **request_kwargs per passare "data=..." solo se è presente un body
+            # Use **request_kwargs to pass "data=..." only when a body is present
             async with session.request(
                 method, self.endpoint + path, params=params, headers=headers, **request_kwargs
             ) as response:
