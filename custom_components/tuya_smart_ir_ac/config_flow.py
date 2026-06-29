@@ -70,6 +70,8 @@ from .const import (
     DEFAULT_FAN_POWER_ON,
     DEFAULT_GLOBAL_PRESETS,
     DEFAULT_HVAC_POWER_ON,
+    ABS_MAX_TEMP,
+    ABS_MIN_TEMP,
     DEFAULT_MAX_TEMP,
     DEFAULT_MIN_TEMP,
     DEFAULT_PRECISION,
@@ -502,8 +504,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 ),
                 vol.Required("temp", default=current_conf.get("temp", DEFAULT_TEMPERATURE)): NumberSelector(
                     NumberSelectorConfig(
-                        min=DEFAULT_MIN_TEMP,
-                        max=DEFAULT_MAX_TEMP,
+                        min=ABS_MIN_TEMP,
+                        max=ABS_MAX_TEMP,
                         step=1,
                         mode=NumberSelectorMode.SLIDER
                     )
@@ -835,16 +837,16 @@ def climate_data() -> dict[vol.Marker, Any]:
         ),
         vol.Required(CONF_TEMP_MIN, default=DEFAULT_MIN_TEMP): NumberSelector(
             NumberSelectorConfig(
-                min=DEFAULT_MIN_TEMP,
-                max=DEFAULT_MAX_TEMP,
+                min=ABS_MIN_TEMP,
+                max=ABS_MAX_TEMP,
                 step=1,
                 mode=NumberSelectorMode.BOX,
             )
         ),
         vol.Required(CONF_TEMP_MAX, default=DEFAULT_MAX_TEMP): NumberSelector(
             NumberSelectorConfig(
-                min=DEFAULT_MIN_TEMP,
-                max=DEFAULT_MAX_TEMP,
+                min=ABS_MIN_TEMP,
+                max=ABS_MAX_TEMP,
                 step=1,
                 mode=NumberSelectorMode.BOX,
             )
